@@ -72,6 +72,7 @@ type ConnectionPresentation = {
 function connectionPresentation(
   overview: PalariReadOverviewResult | null,
   isPending: boolean,
+  hasRefreshError: boolean,
 ): ConnectionPresentation {
   if (!overview) {
     return isPending
@@ -90,6 +91,14 @@ function connectionPresentation(
   }
   switch (overview.status) {
     case "ready":
+      if (hasRefreshError) {
+        return {
+          icon: AlertCircle,
+          label: "Company OS · Last known connected",
+          tone: "text-warning-foreground",
+          state: "cached",
+        };
+      }
       return {
         icon: ShieldCheck,
         label: "Company OS · Connected",
@@ -139,11 +148,11 @@ function CheckedAt({ value }: { readonly value: string | undefined }) {
 }
 
 function PanelHeader(
-  props: Pick<PalariPanelViewProps, "isPending" | "onRefresh"> & {
+  props: Pick<PalariPanelViewProps, "error" | "isPending" | "onRefresh"> & {
     readonly overview: PalariReadOverviewResult | null;
   },
 ) {
-  const connection = connectionPresentation(props.overview, props.isPending);
+  const connection = connectionPresentation(props.overview, props.isPending, props.error !== null);
   const ConnectionIcon = connection.icon;
   const refreshButton = (
     <Button
@@ -277,7 +286,8 @@ function AttentionRail({ overview }: { readonly overview: PalariReadyOverview })
         <AlertTitle>Governance attention needed</AlertTitle>
         <AlertDescription>
           {overview.summary.needsAttention} governed work{" "}
-          {overview.summary.needsAttention === 1 ? "item needs" : "items need"} review.
+          {overview.summary.needsAttention === 1 ? "item needs" : "items need"} governance
+          attention.
         </AlertDescription>
       </Alert>
     );
@@ -596,7 +606,12 @@ export function PalariPanelView(props: PalariPanelViewProps) {
         className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background"
         data-palari-panel
       >
-        <PanelHeader overview={overview} isPending={props.isPending} onRefresh={props.onRefresh} />
+        <PanelHeader
+          overview={overview}
+          error={props.error}
+          isPending={props.isPending}
+          onRefresh={props.onRefresh}
+        />
         <div className="sr-only" role="status" aria-live="polite">
           {liveStatusMessage(props)}
         </div>

@@ -124,28 +124,28 @@ export function buildReadyNoAttentionOverview(): PalariReadyOverview {
       total: 1,
       needsAttention: 0,
       waitingOnHuman: 0,
-      active: 0,
-      reviewReady: 1,
-      evidenceReady: 1,
+      active: 1,
+      reviewReady: 0,
+      evidenceReady: 0,
     },
     workItems: [
       readyWorkItem({
         id: "WORK-FIXTURE-003",
-        title: "Review the fictional receipt bundle",
-        status: "review-ready",
-        attention: "ready-to-integrate",
-        why: "The fictional receipt, evidence, and independent review are ready to inspect.",
+        title: "Continue the fictional bounded draft",
+        status: "active",
+        attention: "ready-for-ai-work",
+        why: "The fictional work remains inside its approved local boundary.",
         risk: "R2",
         intensity: "light",
-        nextStepType: "inspect",
+        nextStepType: "start-work",
         aiSafeToProceed: true,
         waitingOnHuman: false,
         readiness: {
-          evidence: "passed",
-          review: "accept-ready",
-          receipt: "ready",
-          acceptance: "pending",
-          approval: "1/1",
+          evidence: "not-started",
+          review: "waiting-on-evidence",
+          receipt: "not-started",
+          acceptance: "receipt-path",
+          approval: "0/0",
           boundary: "clear",
         },
       }),
@@ -153,8 +153,47 @@ export function buildReadyNoAttentionOverview(): PalariReadyOverview {
     scopeSummary: {
       ...overview.scopeSummary!,
       workItemId: "WORK-FIXTURE-003",
-      objective: "Inspect the fictional receipt bundle without changing Company OS records.",
+      objective: "Continue the fictional bounded draft without changing Company OS records.",
       requiresHumanDecision: false,
+    },
+  };
+}
+
+export function buildReadyGovernanceAttentionOverview(): PalariReadyOverview {
+  const overview = buildReadyNoAttentionOverview();
+  return {
+    ...overview,
+    summary: {
+      ...overview.summary,
+      needsAttention: 1,
+      active: 0,
+    },
+    workItems: [
+      readyWorkItem({
+        id: "WORK-FIXTURE-004",
+        title: "Gather fictional boundary evidence",
+        status: "in-review",
+        attention: "needs-evidence",
+        why: "The fictional evidence bundle is not complete yet.",
+        risk: "R2",
+        intensity: "light",
+        nextStepType: "check-active-proof",
+        aiSafeToProceed: false,
+        waitingOnHuman: false,
+        readiness: {
+          evidence: "missing",
+          review: "waiting-on-evidence",
+          receipt: "missing",
+          acceptance: "receipt-path",
+          approval: "0/0",
+          boundary: "clear",
+        },
+      }),
+    ],
+    scopeSummary: {
+      ...overview.scopeSummary!,
+      workItemId: "WORK-FIXTURE-004",
+      objective: "Gather fictional boundary evidence without changing Company OS records.",
     },
   };
 }

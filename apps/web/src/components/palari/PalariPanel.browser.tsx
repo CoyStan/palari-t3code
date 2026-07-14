@@ -15,6 +15,7 @@ import {
   buildMaxTextOverview,
   buildOperationalOverview,
   buildReadyAttentionOverview,
+  buildReadyGovernanceAttentionOverview,
   buildReadyNoAttentionOverview,
   PALARI_MAX_LONG_TEXT,
   PALARI_MAX_SHORT_TEXT,
@@ -257,10 +258,26 @@ describe("PalariPanelView", () => {
     await render(<PanelFrame overview={buildReadyNoAttentionOverview()} />);
 
     expect(page.getByText("No founder action needed").query()).not.toBeNull();
-    await expect.element(page.getByText("Review the fictional receipt bundle")).toBeVisible();
+    await expect
+      .element(page.getByRole("heading", { name: "Continue the fictional bounded draft" }))
+      .toBeVisible();
     expect(document.body.textContent).not.toContain("Founder decision required");
     expect(document.body.textContent).not.toContain("Governance attention needed");
     assertPanelIdentity(panelElement(), true);
+    assertReadOnlyControlInventory(panelElement());
+  });
+
+  it("describes non-review attention without overstating its governance state", async () => {
+    await render(<PanelFrame overview={buildReadyGovernanceAttentionOverview()} />);
+
+    await expect.element(page.getByText("Governance attention needed")).toBeVisible();
+    await expect
+      .element(page.getByText("1 governed work item needs governance attention."))
+      .toBeVisible();
+    await expect
+      .element(page.getByRole("heading", { name: "Gather fictional boundary evidence" }))
+      .toBeVisible();
+    expect(document.body.textContent).not.toContain("item needs review");
     assertReadOnlyControlInventory(panelElement());
   });
 
@@ -344,6 +361,8 @@ describe("PalariPanelView", () => {
     await expect.element(page.getByText("Refresh failed", { exact: true })).toBeVisible();
     await expect.element(page.getByText(cached.workspace.name)).toBeVisible();
     await expect.element(page.getByText(cached.workItems[0]!.title)).toBeVisible();
+    await expect.element(page.getByText("Company OS · Last known connected")).toBeVisible();
+    expect(panelElement().querySelector('[data-palari-connection="cached"]')).not.toBeNull();
     expect(panelElement().querySelector(`time[datetime="${cached.checkedAt}"]`)).not.toBeNull();
 
     await screen.rerender(<PanelFrame overview={cached} isPending />);
