@@ -71,6 +71,10 @@
       "types": "./src/state/orchestration.ts",
       "default": "./src/state/orchestration.ts"
     },
+    "./state/palari": {
+      "types": "./src/state/palari.ts",
+      "default": "./src/state/palari.ts"
+    },
     "./state/presentation": {
       "types": "./src/state/presentation.ts",
       "default": "./src/state/presentation.ts"

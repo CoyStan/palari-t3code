@@ -1,0 +1,97 @@
+{
+  "protocolVersion": 1,
+  "status": "ready",
+  "checkedAt": "2026-07-14T00:00:00.000Z",
+  "companyOs": {
+    "version": "0.1.2",
+    "revision": "e651a3e9c9cacfc584d507a75cf3152df860d9d4"
+  },
+  "workspace": {
+    "id": "palari-readonly-fixture-v1",
+    "name": "T3 Palari Read-Only Fixture",
+    "schemaVersion": 1
+  },
+  "summary": {
+    "total": 2,
+    "needsAttention": 1,
+    "waitingOnHuman": 1,
+    "active": 1,
+    "reviewReady": 0,
+    "evidenceReady": 0
+  },
+  "workItems": [
+    {
+      "id": "WORK-FIXTURE-002",
+      "title": "Choose the fictional publication boundary",
+      "status": "needs-human",
+      "attention": "needs-human-decision",
+      "why": "Decision DECISION-FIXTURE-001 is open for this work item.",
+      "goalTitle": "Demonstrate bounded founder-supervised work",
+      "workbenchLabel": "Read-Only Bridge Fixture",
+      "owner": "Avery Founder",
+      "assignedPalari": {
+        "id": "PALARI-FIXTURE-LUMEN",
+        "name": "Lumen"
+      },
+      "risk": "R4",
+      "intensity": "high",
+      "nextStepType": "human-decision",
+      "aiSafeToProceed": false,
+      "waitingOnHuman": true,
+      "readiness": {
+        "evidence": "not-started",
+        "review": "waiting-on-evidence",
+        "receipt": "not-started",
+        "acceptance": "pending",
+        "approval": "0/1",
+        "boundary": "clear"
+      },
+      "contentTruncated": false
+    },
+    {
+      "id": "WORK-FIXTURE-001",
+      "title": "Draft a fictional fixture summary",
+      "status": "active",
+      "attention": "ready-for-ai-work",
+      "why": "No execution attempt exists yet.",
+      "goalTitle": "Demonstrate bounded founder-supervised work",
+      "workbenchLabel": "Read-Only Bridge Fixture",
+      "owner": "Avery Founder",
+      "assignedPalari": {
+        "id": "PALARI-FIXTURE-LUMEN",
+        "name": "Lumen"
+      },
+      "risk": "R2",
+      "intensity": "light",
+      "nextStepType": "start-work",
+      "aiSafeToProceed": true,
+      "waitingOnHuman": false,
+      "readiness": {
+        "evidence": "not-started",
+        "review": "waiting-on-evidence",
+        "receipt": "not-started",
+        "acceptance": "receipt-path",
+        "approval": "0/0",
+        "boundary": "clear"
+      },
+      "contentTruncated": false
+    }
+  ],
+  "scopeSummary": {
+    "workItemId": "WORK-FIXTURE-002",
+    "objective": "Record whether fictional fixture output could ever be published outside the local workspace.",
+    "readPathCount": 1,
+    "writePathCount": 1,
+    "sourceCount": 1,
+    "forbiddenActionCount": 6,
+    "requiredOutputCount": 1,
+    "requiresEvidence": true,
+    "requiresReview": true,
+    "requiresReceipt": true,
+    "requiresHumanDecision": true,
+    "externalWritesAllowed": false,
+    "contentTruncated": false
+  },
+  "itemsTruncated": false,
+  "contentTruncated": false
+}

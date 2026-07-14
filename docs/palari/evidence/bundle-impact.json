@@ -1,0 +1,42 @@
+{
+  "status": "pass",
+  "baseRevision": "c1ec1915fc16f3dc1ec5d47d9a97f6210a574526",
+  "branch": "palari/company-os-readonly-bridge-v0",
+  "measurement": {
+    "build": "vp run --filter @t3tools/web build",
+    "rawBytes": "stat",
+    "gzipBytes": "gzip -n -c",
+    "comparableToolchain": true
+  },
+  "budgetsBytesGzip": {
+    "initialJavaScriptDelta": 5120,
+    "palariLazyChunk": 25600,
+    "cssDelta": 2048
+  },
+  "measurements": {
+    "initialJavaScript": {
+      "base": { "rawBytes": 3425250, "gzipBytes": 1016518 },
+      "branch": { "rawBytes": 3428324, "gzipBytes": 1018464 },
+      "delta": { "rawBytes": 3074, "gzipBytes": 1946 },
+      "withinBudget": true
+    },
+    "css": {
+      "base": { "rawBytes": 330535, "gzipBytes": 56391 },
+      "branch": { "rawBytes": 330658, "gzipBytes": 56405 },
+      "delta": { "rawBytes": 123, "gzipBytes": 14 },
+      "withinBudget": true
+    },
+    "palariLazyChunk": {
+      "rawBytes": 20114,
+      "gzipBytes": 6361,
+      "withinBudget": true
+    }
+  },
+  "runtimeDependenciesAdded": false,
+  "developmentDependenciesAdded": [
+    "@vitest/browser-playwright",
+    "playwright",
+    "vitest-browser-react"
+  ],
+  "note": "The Palari panel is a named lazy chunk; deterministic gzip measurements are below every v0 budget."
+}

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-07-14T00:00:00.000Z",
+  "fixture": "packages/contracts/test-fixtures/palari-readonly-v1",
+  "companyOsRevision": "e651a3e9c9cacfc584d507a75cf3152df860d9d4",
+  "companyOsVersion": "0.1.2",
+  "algorithm": "sha256(sorted C-locale manifest of relative path and sha256 for every regular file)",
+  "regularFileCount": 3,
+  "before": "b8894c81ff122baef685bf5655fb271d57c6428c076f007460134c849aeb192e",
+  "after": "b8894c81ff122baef685bf5655fb271d57c6428c076f007460134c849aeb192e",
+  "unchanged": true,
+  "operations": [
+    "validate --json",
+    "queue --json",
+    "agent brief WORK-FIXTURE-002 --as PALARI-FIXTURE-LUMEN --mode execute --json",
+    "agent brief WORK-FIXTURE-001 --as PALARI-FIXTURE-LUMEN --mode execute --json"
+  ],
+  "workspaceCopy": "temporary and removed",
+  "providerAccess": false
+}

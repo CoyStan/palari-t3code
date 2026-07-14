@@ -143,6 +143,7 @@ import {
   SourceControlRepositoryLookupInput,
 } from "./sourceControl.ts";
 import { VcsError } from "./vcs.ts";
+import { PalariReadOverviewInput, PalariReadOverviewResult } from "./palari.ts";
 
 export const WS_METHODS = {
   // Project registry methods
@@ -222,6 +223,9 @@ export const WS_METHODS = {
   sourceControlLookupRepository: "sourceControl.lookupRepository",
   sourceControlCloneRepository: "sourceControl.cloneRepository",
   sourceControlPublishRepository: "sourceControl.publishRepository",
+
+  // Palari Company OS governance (read only)
+  palariReadOverview: "palari.readOverview",
 
   // Streaming subscriptions
   subscribeVcsStatus: "subscribeVcsStatus",
@@ -314,6 +318,12 @@ export const WsServerGetProcessResourceHistoryRpc = Rpc.make(
 export const WsServerSignalProcessRpc = Rpc.make(WS_METHODS.serverSignalProcess, {
   payload: ServerSignalProcessInput,
   success: ServerSignalProcessResult,
+  error: EnvironmentAuthorizationError,
+});
+
+export const WsPalariReadOverviewRpc = Rpc.make(WS_METHODS.palariReadOverview, {
+  payload: PalariReadOverviewInput,
+  success: PalariReadOverviewResult,
   error: EnvironmentAuthorizationError,
 });
 
@@ -694,6 +704,7 @@ export const WsRpcGroup = RpcGroup.make(
   WsServerGetProcessDiagnosticsRpc,
   WsServerGetProcessResourceHistoryRpc,
   WsServerSignalProcessRpc,
+  WsPalariReadOverviewRpc,
   WsCloudGetRelayClientStatusRpc,
   WsCloudInstallRelayClientRpc,
   WsSourceControlLookupRepositoryRpc,

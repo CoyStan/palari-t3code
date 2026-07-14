@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "name": "T3 Palari Read-Only Fixture",
+  "goals": [
+    {
+      "id": "GOAL-FIXTURE-001",
+      "title": "Demonstrate bounded founder-supervised work",
+      "owner": "HUMAN-FIXTURE-FOUNDER",
+      "status": "active",
+      "priority": "high",
+      "success_criteria": [
+        "T3 presents governance state without mutating the workspace",
+        "Human-only decisions remain explicit"
+      ],
+      "linked_palaris": ["PALARI-FIXTURE-LUMEN"],
+      "linked_work": ["WORK-FIXTURE-001", "WORK-FIXTURE-002"],
+      "linked_decisions": ["DECISION-FIXTURE-001"]
+    }
+  ],
+  "humans": [
+    {
+      "id": "HUMAN-FIXTURE-FOUNDER",
+      "name": "Avery Founder",
+      "role": "Founder",
+      "authority_level": "admin",
+      "approval_capabilities": ["product", "policy"],
+      "ownership_areas": ["fixture product direction"],
+      "availability": "active"
+    }
+  ],
+  "palaris": [
+    {
+      "id": "PALARI-FIXTURE-LUMEN",
+      "name": "Lumen",
+      "role": "Fixture work partner",
+      "scope": "Prepare fictional local documentation inside an explicit boundary.",
+      "allowed_inputs": ["selected fictional brief"],
+      "forbidden_inputs": ["real customer data", "secrets"],
+      "forbidden_actions": ["external writes", "accept work", "deploy"],
+      "standards": ["keep evidence visible", "stop for human authority"],
+      "memory_sources": ["SOURCE-FIXTURE-001"],
+      "default_worker": "fixture-worker",
+      "owner_human": "HUMAN-FIXTURE-FOUNDER",
+      "linked_goals": ["GOAL-FIXTURE-001"],
+      "active_work": ["WORK-FIXTURE-001", "WORK-FIXTURE-002"],
+      "outcomes": []
+    }
+  ],
+  "sources": [
+    {
+      "id": "SOURCE-FIXTURE-001",
+      "label": "Fictional product brief",
+      "kind": "note",
+      "provider": "local_note",
+      "uri": "fixtures/fictional-product-brief.md",
+      "access_mode": "read",
+      "selected": true,
+      "owner_human": "HUMAN-FIXTURE-FOUNDER",
+      "allowed_palaris": ["PALARI-FIXTURE-LUMEN"],
+      "data_class": "internal",
+      "authority": "company_owned",
+      "steward_human": "HUMAN-FIXTURE-FOUNDER",
+      "freshness_sla": "fixture-static",
+      "redaction_required": false,
+      "last_seen_revision": "fixture-v1",
+      "last_read_at": "2026-07-14T00:00:00Z"
+    }
+  ],
+  "workbenches": [
+    {
+      "id": "WORKBENCH-FIXTURE-001",
+      "label": "Read-Only Bridge Fixture",
+      "summary": "Fictional bounded work used only to verify the T3 read-only adapter.",
+      "goal_ids": ["GOAL-FIXTURE-001"],
+      "palari_ids": ["PALARI-FIXTURE-LUMEN"],
+      "human_ids": ["HUMAN-FIXTURE-FOUNDER"],
+      "source_ids": ["SOURCE-FIXTURE-001"],
+      "output_target_ids": ["docs/fixture-summary.md", "docs/fixture-boundary-decision.md"],
+      "status": "active"
+    }
+  ],
+  "capabilities": [],
+  "authority_profiles": [],
+  "playbook_sources": [],
+  "integrations": [],
+  "integration_plans": [],
+  "integration_outbox": [],
+  "work_items": [
+    {
+      "id": "WORK-FIXTURE-001",
+      "title": "Draft a fictional fixture summary",
+      "goal": "GOAL-FIXTURE-001",
+      "palari": "PALARI-FIXTURE-LUMEN",
+      "workbench_id": "WORKBENCH-FIXTURE-001",
+      "risk": "R2",
+      "intensity": "light",
+      "status": "active",
+      "scope": "Use the selected fictional brief to draft one local fixture summary.",
+      "allowed_resources": ["fixtures/fictional-product-brief.md", "docs/fixture-summary.md"],
+      "allowed_sources": ["SOURCE-FIXTURE-001"],
+      "allowed_actions": ["local_read", "local_write"],
+      "output_targets": ["docs/fixture-summary.md"],
+      "forbidden_actions": ["external_write", "merge", "deploy"],
+      "acceptance_target": "A human can inspect the fictional summary and its receipt.",
+      "verification_expectations": [
+        "fixture validation passes",
+        "read-only workspace fingerprint stays unchanged"
+      ],
+      "required_approval_count": 0,
+      "required_approval_capability": "",
+      "conflict_targets": ["docs/fixture-summary.md"],
+      "parallel_policy": "independent"
+    },
+    {
+      "id": "WORK-FIXTURE-002",
+      "title": "Choose the fictional publication boundary",
+      "goal": "GOAL-FIXTURE-001",
+      "palari": "PALARI-FIXTURE-LUMEN",
+      "workbench_id": "WORKBENCH-FIXTURE-001",
+      "risk": "R4",
+      "intensity": "high",
+      "status": "needs-human",
+      "scope": "Record whether fictional fixture output could ever be published outside the local workspace.",
+      "allowed_resources": ["docs/fixture-boundary-decision.md"],
+      "allowed_sources": ["SOURCE-FIXTURE-001"],
+      "allowed_actions": ["local_read"],
+      "output_targets": ["docs/fixture-boundary-decision.md"],
+      "forbidden_actions": ["external_write", "publish", "approve own work"],
+      "acceptance_target": "The founder explicitly chooses the safe publication boundary.",
+      "verification_expectations": [
+        "open human decision remains visible",
+        "no external action occurs"
+      ],
+      "required_approval_count": 1,
+      "required_approval_capability": "policy",
+      "parallel_policy": "exclusive"
+    }
+  ],
+  "proposals": [],
+  "attempts": [],
+  "evidence_runs": [],
+  "review_verdicts": [],
+  "human_decisions": [],
+  "acceptance_records": [],
+  "receipts": [],
+  "decisions": [
+    {
+      "id": "DECISION-FIXTURE-001",
+      "question": "May this fictional fixture output leave the local test workspace?",
+      "status": "open",
+      "context": "This is a fictional decision included to exercise a human-authority state.",
+      "options": ["Keep all output local", "Design a later reviewed export contract"],
+      "tradeoffs": [
+        "Local-only is safest for the first read-only bridge.",
+        "A later export contract would require separate authority and evidence."
+      ],
+      "recommendation": "Keep all output local in v0.",
+      "safe_default": "Keep all output local.",
+      "required_human": "HUMAN-FIXTURE-FOUNDER",
+      "required_role": "Founder",
+      "linked_goal": "GOAL-FIXTURE-001",
+      "linked_work": "WORK-FIXTURE-002",
+      "linked_palari": "PALARI-FIXTURE-LUMEN"
+    }
+  ],
+  "outcomes": []
+}
