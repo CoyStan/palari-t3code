@@ -24,6 +24,7 @@ const PREVIEW_PANEL_DEFAULT_WIDTH = 540;
 export function PreviewPanelShell(props: {
   mode: PreviewPanelMode;
   maximized?: boolean;
+  inlineMaxWidth?: number;
   children: ReactNode;
 }) {
   const useDragRegion = isElectron && props.mode !== "sheet" && props.mode !== "embedded";
@@ -36,6 +37,8 @@ export function PreviewPanelShell(props: {
     maxWidth,
     edge: "left",
   });
+  const inlineWidth =
+    props.inlineMaxWidth === undefined ? width : Math.min(width, props.inlineMaxWidth);
 
   return (
     <div
@@ -47,7 +50,7 @@ export function PreviewPanelShell(props: {
             : "shrink-0 border-l border-border"
           : "w-full",
       )}
-      style={isInline && !props.maximized ? { width: `${width}px` } : undefined}
+      style={isInline && !props.maximized ? { width: `${inlineWidth}px` } : undefined}
       data-preview-panel-mode={props.mode}
       data-preview-panel-maximized={props.maximized ? "true" : "false"}
     >

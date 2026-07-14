@@ -1,0 +1,47 @@
+{
+  "status": "pass",
+  "pinnedBaseRevision": "c1ec1915fc16f3dc1ec5d47d9a97f6210a574526",
+  "acceptedV0Revision": "5df5eae0d1eb012fb1d30c276342a0c7fcdc8c60",
+  "reviewedVisualRevision": "d1e6ee76bf1e20698dd00c0a3e40b74cb5ca54f3",
+  "branch": "palari/company-os-visual-panel-v1",
+  "measurement": {
+    "build": "vp run --filter @t3tools/web build",
+    "rawBytes": "stat",
+    "gzipBytes": "gzip -n -c",
+    "node": "24.13.1",
+    "vitePlus": "0.2.2",
+    "comparableToolchain": true
+  },
+  "budgetsBytesGzip": {
+    "initialJavaScriptDeltaFromPinnedBase": 5120,
+    "palariLazyChunk": 25600,
+    "cssDeltaFromPinnedBase": 2048
+  },
+  "measurements": {
+    "initialJavaScript": {
+      "pinnedBase": { "rawBytes": 3425250, "gzipBytes": 1016518 },
+      "acceptedV0": { "rawBytes": 3428324, "gzipBytes": 1018464 },
+      "visualV1": { "rawBytes": 3428840, "gzipBytes": 1018686 },
+      "visualV1DeltaFromPinnedBase": { "rawBytes": 3590, "gzipBytes": 2168 },
+      "visualV1DeltaFromAcceptedV0": { "rawBytes": 516, "gzipBytes": 222 },
+      "withinBudget": true
+    },
+    "css": {
+      "pinnedBase": { "rawBytes": 330535, "gzipBytes": 56391 },
+      "acceptedV0": { "rawBytes": 330658, "gzipBytes": 56405 },
+      "visualV1": { "rawBytes": 331814, "gzipBytes": 56674 },
+      "visualV1DeltaFromPinnedBase": { "rawBytes": 1279, "gzipBytes": 283 },
+      "visualV1DeltaFromAcceptedV0": { "rawBytes": 1156, "gzipBytes": 269 },
+      "withinBudget": true
+    },
+    "palariLazyChunk": {
+      "acceptedV0": { "rawBytes": 20114, "gzipBytes": 6361 },
+      "visualV1": { "rawBytes": 32083, "gzipBytes": 9724 },
+      "visualV1DeltaFromAcceptedV0": { "rawBytes": 11969, "gzipBytes": 3363 },
+      "withinBudget": true
+    }
+  },
+  "runtimeDependenciesAdded": false,
+  "packageOrLockfileChanged": false,
+  "note": "The visual hierarchy, semantic icons, and state treatments remain inside the named lazy Palari chunk. All accepted v0 budgets remain satisfied."
+}
