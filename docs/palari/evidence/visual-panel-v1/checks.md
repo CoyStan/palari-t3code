@@ -1,10 +1,14 @@
 # Palari Visual Panel v1 Verification
 
-Status: **pass; independent review pending**
+Status: **pass; independent review ACCEPT**
 
 The commands below ran on branch `palari/company-os-visual-panel-v1`, stacked
 from exact accepted v0 head
 `5df5eae0d1eb012fb1d30c276342a0c7fcdc8c60`.
+
+The independently accepted visual product candidate is
+`d1e6ee76bf1e20698dd00c0a3e40b74cb5ca54f3` (tree
+`ffb347e1f19ff93e0043aa9524c682d4c18a448b`).
 
 ## Foundation attestation
 
@@ -32,15 +36,15 @@ Company OS file changed.
 
 ## Automated checks
 
-| Check                                | Result | Evidence summary                                                                                                                                                                                                                                                                                                                                                           |
-| ------------------------------------ | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Focused view-state suite             | Pass   | 50 assertions cover ordering, field-specific fail-closed semantic tones, label/approval formatting, and unknown-state handling.                                                                                                                                                                                                                                            |
-| Palari Chromium project              | Pass   | 11 serial scenarios cover ready with/without attention, empty, loading/refreshing, all operational failures, cached warning, exact 256/512-character limits, 50 items, both themes, 28rem inline cap, desktop/mobile overflow, keyboard activation, tooltip, focus trap, Escape restoration, announcements, compact radii, no nested cards, and the one-control inventory. |
-| Web unit suite                       | Pass   | 150 files / 1,333 tests.                                                                                                                                                                                                                                                                                                                                                   |
-| `vp check`                           | Pass   | 2,099 files formatted; zero errors. Nine existing unrelated `react(no-unstable-nested-components)` warnings remain in `ChatMarkdown.tsx` and `CommandPalette.tsx`.                                                                                                                                                                                                         |
-| `vp run typecheck`                   | Pass   | All 15 package typechecks passed; existing unrelated Effect suggestions remain advisory.                                                                                                                                                                                                                                                                                   |
-| `vp run --filter @t3tools/web build` | Pass   | Production build passed with the existing large-chunk advisory.                                                                                                                                                                                                                                                                                                            |
-| `git diff --check`                   | Pass   | No whitespace errors.                                                                                                                                                                                                                                                                                                                                                      |
+| Check                                | Result | Evidence summary                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Focused view-state suite             | Pass   | 50 assertions cover ordering, field-specific fail-closed semantic tones, label/approval formatting, and unknown-state handling.                                                                                                                                                                                                                                                                                                            |
+| Palari Chromium project              | Pass   | 12 serial scenarios cover ready with/without attention, non-review governance attention, empty, loading/refreshing, all operational failures, cached warning/last-known connection identity, exact 256/512-character limits, 50 items, both themes, 28rem inline cap, desktop/mobile overflow, keyboard activation, tooltip, focus trap, Escape restoration, announcements, compact radii, no nested cards, and the one-control inventory. |
+| Web unit suite                       | Pass   | 150 files / 1,333 tests.                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `vp check`                           | Pass   | 2,102 files formatted; zero errors. Nine existing unrelated `react(no-unstable-nested-components)` warnings remain in `ChatMarkdown.tsx` and `CommandPalette.tsx`.                                                                                                                                                                                                                                                                         |
+| `vp run typecheck`                   | Pass   | All 15 package typechecks passed; existing unrelated Effect suggestions remain advisory.                                                                                                                                                                                                                                                                                                                                                   |
+| `vp run --filter @t3tools/web build` | Pass   | Production build passed with the existing large-chunk advisory.                                                                                                                                                                                                                                                                                                                                                                            |
+| `git diff --check`                   | Pass   | No whitespace errors.                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 The focused suite used `vp test`; the full web package script used
 `vp run --filter @t3tools/web test`; the dedicated browser project used
@@ -74,7 +78,7 @@ Each provider-free fresh-draft capture also observed one T3 orchestration
 detail probe returning `404` for the unpromoted local draft route. The failing
 path is `/api/orchestration/threads/<draft-id>` and occurs outside the Palari
 RPC; it is recorded here rather than concealed. The Palari-only Chromium
-project emitted zero console errors across all 11 scenarios.
+project emitted zero console errors across all 12 scenarios.
 
 The pinned sibling checkout had independently advanced to `2eea39e…` and had
 unrelated working changes when visual verification began. It was not modified.
@@ -96,3 +100,10 @@ custom CSS layer, proprietary asset, or visually separate dashboard was found.
 
 Bundle measurements and exact deterministic gzip deltas are in
 `bundle-impact.json`.
+
+The first independent exact-head review returned `CHANGES_REQUESTED` for two
+semantic issues: an attention rail that over-specialized all attention as
+review, and a cached refresh warning whose connection label remained current.
+Commit `d1e6ee76bf1e20698dd00c0a3e40b74cb5ca54f3` repaired both and added
+production-consistent regressions. A second exact-head review returned
+`ACCEPT` with no findings. Full details are in `independent-review.md`.

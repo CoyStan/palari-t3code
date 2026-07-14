@@ -1,6 +1,6 @@
 # Palari Company OS Visual Panel v1 Contract
 
-Status: **candidate verified; independent review pending**
+Status: **complete; independently accepted**
 
 This contract applies only to branch `palari/company-os-visual-panel-v1`,
 stacked from accepted read-only bridge head
@@ -103,13 +103,13 @@ when its named evidence exists in the committed visual candidate.
 
 ## Review and handoff
 
-- [ ] The complete candidate is committed before final review. Evidence: exact
+- [x] The complete candidate is committed before final review. Evidence: exact
       reviewed commit in `independent-review.md`.
-- [ ] A fresh independent design/accessibility/security reviewer returns
+- [x] A fresh independent design/accessibility/security reviewer returns
       `ACCEPT`, with substantive findings repaired and re-reviewed. Evidence:
       `docs/palari/evidence/visual-panel-v1/independent-review.md`.
-- [ ] The visual founder packet records exact commits, both PRs, screenshots,
+- [x] The visual founder packet records exact commits, both PRs, screenshots,
       checks, bundle impact, residual risks, and an acceptance recommendation.
       Evidence: `docs/palari/founder-packet-visual-v1.md`.
-- [ ] The stacked PR targets `palari/company-os-readonly-bridge-v0` and neither
+- [x] The stacked PR targets `palari/company-os-readonly-bridge-v0` and neither
       PR is merged or deployed. Evidence: founder packet and final handoff.

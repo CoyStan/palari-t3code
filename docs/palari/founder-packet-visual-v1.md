@@ -1,6 +1,6 @@
 # Founder Packet: Palari Company OS Visual Panel v1
 
-Status: **candidate verified; independent review pending**
+Status: **independently accepted; ready for founder acceptance**
 
 This packet will be completed only after the stacked visual candidate is
 committed, verified, independently accepted, pushed, and opened as a PR against
@@ -14,8 +14,10 @@ writes.
 - Pinned T3 baseline: `c1ec1915fc16f3dc1ec5d47d9a97f6210a574526`
 - Foundation PR: `https://github.com/CoyStan/palari-t3code/pull/1`
 - Visual branch: `palari/company-os-visual-panel-v1`
-- Visual candidate: pending
-- Stacked visual PR: pending
+- Initial visual candidate: `e826dc38492089c427046729d44e2b8f47f33655`
+- Independently accepted visual product commit:
+  `d1e6ee76bf1e20698dd00c0a3e40b74cb5ca54f3`
+- Stacked visual PR: `https://github.com/CoyStan/palari-t3code/pull/2`
 
 The visual branch is rooted directly at accepted v0. It does not alter the v0
 commit, server adapter, typed protocol, Company OS authority, Git/GitHub
@@ -48,6 +50,21 @@ layer, gradient, or separate dashboard was added.
 - Screenshots: six ready/empty/unavailable desktop/mobile PNGs under
   `docs/palari/evidence/visual-panel-v1/`
 
+Verification at the accepted product commit passed:
+
+- `vp check` with zero errors and only nine unrelated existing warnings;
+- all 15 `vp run typecheck` package checks;
+- 50/50 focused view-state assertions;
+- 12/12 Palari Chromium scenarios;
+- 150 web test files and 1,333 tests;
+- the production web build and `git diff --check`; and
+- the accepted bundle budgets: +2,168 bytes initial JavaScript gzip from the
+  pinned baseline, +283 bytes CSS gzip, and a 9,724-byte lazy Palari chunk.
+
+The initial independent review returned `CHANGES_REQUESTED` for two semantic
+claims. The accepted product commit repaired both with regressions, and the
+fresh exact-head re-review returned **ACCEPT** with no findings.
+
 ## Residual risks and recommendation
 
 Current residual risks:
@@ -64,6 +81,7 @@ Current residual risks:
 - A user can still intentionally maximize the shared right panel through T3's
   existing global layout control.
 
-Recommendation: accept the visual candidate after the exact committed head
-receives an independent `ACCEPT` and the stacked PR is opened. Do not merge
-either PR as part of this handoff.
+Recommendation: founder-accept the visual product commit as the reviewed
+candidate in stacked draft PR #2. Keep PR #2 based on the accepted v0 branch
+until foundation PR #1 is merged, and do not merge or deploy either PR as part
+of this handoff.
