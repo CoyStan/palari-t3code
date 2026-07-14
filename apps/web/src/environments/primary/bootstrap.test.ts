@@ -24,6 +24,7 @@ const BASE_ENVIRONMENT = {
   },
   serverVersion: "0.0.0-test",
   capabilities: {
+    palariCompanyOsRead: false,
     repositoryIdentity: true,
   },
 } satisfies ExecutionEnvironmentDescriptor;

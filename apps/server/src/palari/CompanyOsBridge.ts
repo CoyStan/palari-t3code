@@ -32,6 +32,31 @@ const MAX_WORK_ITEMS = 50;
 const SHORT_TEXT_LENGTH = 256;
 const LONG_TEXT_LENGTH = 512;
 
+const WORKSPACE_COLLECTION_KEYS = [
+  "goals",
+  "humans",
+  "palaris",
+  "sources",
+  "work_items",
+  "attempts",
+  "evidence_runs",
+  "review_verdicts",
+  "human_decisions",
+  "receipts",
+  "decisions",
+  "outcomes",
+  "playbook_sources",
+  "workbenches",
+  "capabilities",
+  "authority_profiles",
+  "integrations",
+  "integration_plans",
+  "integration_outbox",
+  "proposals",
+  "acceptance_records",
+] as const;
+const WORKSPACE_COLLECTION_KEY_SET = new Set<string>(WORKSPACE_COLLECTION_KEYS);
+
 export interface CompanyOsBridgeConfig {
   readonly enabled: boolean;
   readonly checkout?: string | undefined;
@@ -123,28 +148,92 @@ const RawIdentifier = Schema.String.check(
   Schema.isPattern(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/),
 );
 
+const WorkStatus = Schema.Literals([
+  "proposed",
+  "active",
+  "in-review",
+  "needs-human",
+  "blocked",
+  "completed",
+  "closed",
+  "done",
+]);
+const AttentionState = Schema.Literals([
+  "needs-human-decision",
+  "changes-requested",
+  "needs-review",
+  "needs-evidence",
+  "ready-to-integrate",
+  "receipt-ready",
+  "ready-for-ai-work",
+  "blocked",
+  "closed",
+]);
+const Risk = Schema.Literals(["R1", "R2", "R3", "R4", "R5"]);
+const Intensity = Schema.Literals(["light", "standard", "high"]);
+const NextStepType = Schema.Literals([
+  "check-active-proof",
+  "start-work",
+  "human-decision",
+  "review-handoff",
+  "repair",
+  "closed",
+  "inspect",
+]);
+const EvidenceState = Schema.Literals([
+  "not-started",
+  "missing",
+  "stale",
+  "passed",
+  "failed",
+  "skipped",
+]);
+const ReviewState = Schema.Literals([
+  "waiting-on-evidence",
+  "missing",
+  "stale",
+  "accept-ready",
+  "changes-requested",
+  "needs-human-decision",
+  "blocked",
+]);
+const ReceiptState = Schema.Literals(["not-started", "missing", "stale", "ready"]);
+const AcceptanceState = Schema.Literals([
+  "pending",
+  "receipt-path",
+  "ready-to-record",
+  "accepted",
+  "rejected",
+  "revoked",
+]);
+const ScopeOverlapState = Schema.Literals(["clear", "blocked"]);
+const ApprovalProgress = Schema.String.check(
+  Schema.isMaxLength(64),
+  Schema.isPattern(/^(0|[1-9]\d*)\/(0|[1-9]\d*)$/),
+);
+
 const RawQueueItem = Schema.Struct({
   id: RawIdentifier,
   title: Schema.String,
-  status: Schema.String,
-  attention: Schema.String,
+  status: WorkStatus,
+  attention: AttentionState,
   why: Schema.String,
   goal_title: Schema.String,
   workbench_label: Schema.String,
   owner: Schema.String,
   palari: Schema.Union([Schema.Literal(""), RawIdentifier]),
   palari_name: Schema.String,
-  risk: Schema.String,
-  intensity: Schema.String,
-  next_step_type: Schema.String,
+  risk: Risk,
+  intensity: Intensity,
+  next_step_type: NextStepType,
   ai_safe_to_proceed: Schema.Boolean,
   waiting_on_human: Schema.Boolean,
-  evidence_state: Schema.String,
-  review_state: Schema.String,
-  receipt_state: Schema.String,
-  acceptance_state: Schema.String,
-  approval_progress: Schema.String,
-  scope_overlap_state: Schema.String,
+  evidence_state: EvidenceState,
+  review_state: ReviewState,
+  receipt_state: ReceiptState,
+  acceptance_state: AcceptanceState,
+  approval_progress: ApprovalProgress,
+  scope_overlap_state: ScopeOverlapState,
 });
 type RawQueueItem = typeof RawQueueItem.Type;
 
@@ -157,6 +246,9 @@ type RawQueueEnvelope = typeof RawQueueEnvelope.Type;
 const RawAgentBrief = Schema.Struct({
   schema_version: Schema.Literal(PINNED_AGENT_PACKET_SCHEMA),
   workspace: Schema.String,
+  agent: Schema.Struct({
+    id: RawIdentifier,
+  }),
   work_item: Schema.Struct({
     id: RawIdentifier,
     objective: Schema.String,
@@ -183,14 +275,70 @@ type RawAgentBrief = typeof RawAgentBrief.Type;
 const RawWorkspaceHeader = Schema.Struct({
   schema_version: Schema.Literal(1),
   name: Schema.String,
+  collection_files: Schema.optionalKey(
+    Schema.Struct({
+      goals: Schema.optionalKey(Schema.Array(Schema.String)),
+      humans: Schema.optionalKey(Schema.Array(Schema.String)),
+      palaris: Schema.optionalKey(Schema.Array(Schema.String)),
+      sources: Schema.optionalKey(Schema.Array(Schema.String)),
+      work_items: Schema.optionalKey(Schema.Array(Schema.String)),
+      attempts: Schema.optionalKey(Schema.Array(Schema.String)),
+      evidence_runs: Schema.optionalKey(Schema.Array(Schema.String)),
+      review_verdicts: Schema.optionalKey(Schema.Array(Schema.String)),
+      human_decisions: Schema.optionalKey(Schema.Array(Schema.String)),
+      receipts: Schema.optionalKey(Schema.Array(Schema.String)),
+      decisions: Schema.optionalKey(Schema.Array(Schema.String)),
+      outcomes: Schema.optionalKey(Schema.Array(Schema.String)),
+      playbook_sources: Schema.optionalKey(Schema.Array(Schema.String)),
+      workbenches: Schema.optionalKey(Schema.Array(Schema.String)),
+      capabilities: Schema.optionalKey(Schema.Array(Schema.String)),
+      authority_profiles: Schema.optionalKey(Schema.Array(Schema.String)),
+      integrations: Schema.optionalKey(Schema.Array(Schema.String)),
+      integration_plans: Schema.optionalKey(Schema.Array(Schema.String)),
+      integration_outbox: Schema.optionalKey(Schema.Array(Schema.String)),
+      proposals: Schema.optionalKey(Schema.Array(Schema.String)),
+      acceptance_records: Schema.optionalKey(Schema.Array(Schema.String)),
+    }),
+  ),
 });
 type RawWorkspaceHeader = typeof RawWorkspaceHeader.Type;
+
+const isRawQueueEnvelope = Schema.is(RawQueueEnvelope);
+const isRawAgentBrief = Schema.is(RawAgentBrief);
+const isRawWorkspaceHeader = Schema.is(RawWorkspaceHeader);
+const encodeReadyOverviewJson = Schema.encodeEffect(
+  Schema.fromJsonString(PalariReadyOverviewSchema),
+);
 
 type BridgeStatusInput = Omit<PalariOperationalStatus, "protocolVersion" | "checkedAt">;
 
 function nonEmpty(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function isValidConfiguredWorkspaceId(value: string): boolean {
+  return /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value);
+}
+
+function hasOnlyKnownCollectionFileKeys(value: unknown): boolean {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return true;
+  const collectionFiles = Reflect.get(value, "collection_files");
+  if (collectionFiles === undefined) return true;
+  if (
+    typeof collectionFiles !== "object" ||
+    collectionFiles === null ||
+    Array.isArray(collectionFiles)
+  ) {
+    return false;
+  }
+  return Object.keys(collectionFiles).every((key) => WORKSPACE_COLLECTION_KEY_SET.has(key));
+}
+
+function isSafeWorkspaceRelativeFile(value: string): boolean {
+  if (value.length === 0 || value.includes("\0")) return false;
+  if (/^(?:[A-Za-z]:[\\/]|\\\\)/.test(value)) return false;
+  return !value.replaceAll("\\", "/").split("/").includes("..");
 }
 
 function status(checkedAt: string, input: BridgeStatusInput): PalariOperationalStatus {
@@ -332,6 +480,34 @@ export const make = Effect.fn("CompanyOsBridge.make")(function* (config: Company
   const path = yield* Path.Path;
   const processRunner = yield* ProcessRunner.ProcessRunner;
 
+  const validateWorkspaceFile = Effect.fn("CompanyOsBridge.validateWorkspaceFile")(function* (
+    canonicalWorkspace: string,
+    candidate: string,
+  ) {
+    const resolvedCandidate = path.resolve(candidate);
+    if (
+      !isRelativePathWithinRoot(
+        path.relative(canonicalWorkspace, resolvedCandidate),
+        path.isAbsolute,
+      )
+    ) {
+      return "invalid" as const;
+    }
+    const canonicalCandidate = yield* fileSystem.realPath(resolvedCandidate).pipe(Effect.option);
+    if (canonicalCandidate._tag === "None") return "invalid" as const;
+    if (
+      !isRelativePathWithinRoot(
+        path.relative(canonicalWorkspace, canonicalCandidate.value),
+        path.isAbsolute,
+      )
+    ) {
+      return "symlink-escape" as const;
+    }
+    const info = yield* fileSystem.stat(canonicalCandidate.value).pipe(Effect.option);
+    if (info._tag === "None" || info.value.type !== "File") return "invalid" as const;
+    return { path: canonicalCandidate.value } as const;
+  });
+
   const readOverview: CompanyOsBridgeService["readOverview"] = Effect.fn(
     "CompanyOsBridge.readOverview",
   )(function* (input) {
@@ -383,6 +559,14 @@ export const make = Effect.fn("CompanyOsBridge.make")(function* (config: Company
         status: "unavailable",
         code: "workspace_missing",
         message: "The Palari read-only workspace is not fully configured.",
+        retryable: false,
+      });
+    }
+    if (!isValidConfiguredWorkspaceId(workspaceId)) {
+      return status(checkedAt, {
+        status: "invalid",
+        code: "workspace_invalid",
+        message: "The configured Palari workspace identity is invalid.",
         retryable: false,
       });
     }
@@ -468,9 +652,28 @@ export const make = Effect.fn("CompanyOsBridge.make")(function* (config: Company
       });
     }
 
-    const workspaceJsonPath = path.join(canonical.value.workspace, "workspace.json");
+    const validatedWorkspaceJson = yield* validateWorkspaceFile(
+      canonical.value.workspace,
+      path.join(canonical.value.workspace, "workspace.json"),
+    );
+    if (validatedWorkspaceJson === "symlink-escape") {
+      return status(checkedAt, {
+        status: "invalid",
+        code: "workspace_symlink_escape",
+        message: "A Palari workspace file resolves outside its approved root.",
+        retryable: false,
+      });
+    }
+    if (validatedWorkspaceJson === "invalid") {
+      return status(checkedAt, {
+        status: "invalid",
+        code: "workspace_invalid",
+        message: "The configured Palari workspace file is invalid.",
+        retryable: false,
+      });
+    }
     const rawWorkspaceText = yield* fileSystem
-      .readFileString(workspaceJsonPath)
+      .readFileString(validatedWorkspaceJson.path)
       .pipe(Effect.option);
     if (rawWorkspaceText._tag === "None") {
       return status(checkedAt, {
@@ -489,7 +692,10 @@ export const make = Effect.fn("CompanyOsBridge.make")(function* (config: Company
         retryable: false,
       });
     }
-    if (!Schema.is(RawWorkspaceHeader)(rawWorkspaceJson)) {
+    if (
+      !hasOnlyKnownCollectionFileKeys(rawWorkspaceJson) ||
+      !isRawWorkspaceHeader(rawWorkspaceJson)
+    ) {
       return status(checkedAt, {
         status: "incompatible",
         code: "workspace_schema_unsupported",
@@ -498,6 +704,39 @@ export const make = Effect.fn("CompanyOsBridge.make")(function* (config: Company
       });
     }
     const workspaceHeader = rawWorkspaceJson as RawWorkspaceHeader;
+    for (const collectionFiles of Object.values(workspaceHeader.collection_files ?? {})) {
+      if (collectionFiles === undefined) continue;
+      for (const relativeFile of collectionFiles) {
+        if (!isSafeWorkspaceRelativeFile(relativeFile) || path.isAbsolute(relativeFile)) {
+          return status(checkedAt, {
+            status: "invalid",
+            code: "workspace_invalid",
+            message: "A declared Palari workspace file is invalid.",
+            retryable: false,
+          });
+        }
+        const validatedCollectionFile = yield* validateWorkspaceFile(
+          canonical.value.workspace,
+          path.join(canonical.value.workspace, relativeFile),
+        );
+        if (validatedCollectionFile === "symlink-escape") {
+          return status(checkedAt, {
+            status: "invalid",
+            code: "workspace_symlink_escape",
+            message: "A Palari workspace file resolves outside its approved root.",
+            retryable: false,
+          });
+        }
+        if (validatedCollectionFile === "invalid") {
+          return status(checkedAt, {
+            status: "invalid",
+            code: "workspace_invalid",
+            message: "A declared Palari workspace file is invalid.",
+            retryable: false,
+          });
+        }
+      }
+    }
 
     const queueArgs = buildPalariReadArgs("queue", { workspace: canonical.value.workspace });
     if (!queueArgs) {
@@ -549,7 +788,7 @@ export const make = Effect.fn("CompanyOsBridge.make")(function* (config: Company
         retryable: false,
       });
     }
-    if (!Schema.is(RawQueueEnvelope)(queueJson)) {
+    if (!isRawQueueEnvelope(queueJson)) {
       return status(checkedAt, {
         status: "incompatible",
         code: "queue_schema_mismatch",
@@ -558,6 +797,14 @@ export const make = Effect.fn("CompanyOsBridge.make")(function* (config: Company
       });
     }
     const queue = queueJson as RawQueueEnvelope;
+    if (queue.workspace !== workspaceHeader.name) {
+      return status(checkedAt, {
+        status: "incompatible",
+        code: "queue_schema_mismatch",
+        message: "The Palari Company OS queue identity is incompatible with this workspace.",
+        retryable: false,
+      });
+    }
 
     let scopeSummary: PalariScopeSummary | null = null;
     const topItem = queue.queue[0];
@@ -618,7 +865,7 @@ export const make = Effect.fn("CompanyOsBridge.make")(function* (config: Company
           retryable: false,
         });
       }
-      if (!Schema.is(RawAgentBrief)(briefJson)) {
+      if (!isRawAgentBrief(briefJson)) {
         return status(checkedAt, {
           status: "incompatible",
           code: "packet_schema_mismatch",
@@ -626,10 +873,22 @@ export const make = Effect.fn("CompanyOsBridge.make")(function* (config: Company
           retryable: false,
         });
       }
-      scopeSummary = normalizeScope(briefJson as RawAgentBrief);
+      const brief = briefJson as RawAgentBrief;
+      if (
+        brief.workspace !== workspaceHeader.name ||
+        brief.work_item.id !== topItem.id ||
+        brief.agent.id !== topItem.palari
+      ) {
+        return status(checkedAt, {
+          status: "incompatible",
+          code: "packet_schema_mismatch",
+          message: "The Palari Company OS agent packet identity is incompatible with this query.",
+          retryable: false,
+        });
+      }
+      scopeSummary = normalizeScope(brief);
     }
 
-    const clippedWorkspaceId = clip(workspaceId, SHORT_TEXT_LENGTH);
     const clippedWorkspaceName = clip(workspaceHeader.name, SHORT_TEXT_LENGTH);
     const selectedItems = queue.queue.slice(0, MAX_WORK_ITEMS).map(normalizeWorkItem);
     const ready: PalariReadyOverview = {
@@ -641,7 +900,7 @@ export const make = Effect.fn("CompanyOsBridge.make")(function* (config: Company
         revision,
       },
       workspace: {
-        id: clippedWorkspaceId.value,
+        id: workspaceId,
         name: clippedWorkspaceName.value,
         schemaVersion: 1,
       },
@@ -657,15 +916,12 @@ export const make = Effect.fn("CompanyOsBridge.make")(function* (config: Company
       scopeSummary,
       itemsTruncated: queue.queue.length > MAX_WORK_ITEMS,
       contentTruncated:
-        clippedWorkspaceId.clipped ||
         clippedWorkspaceName.clipped ||
         selectedItems.some((item) => item.contentTruncated) ||
         scopeSummary?.contentTruncated === true,
     };
 
-    const encodedReady = yield* Schema.encodeEffect(
-      Schema.fromJsonString(PalariReadyOverviewSchema),
-    )(ready).pipe(Effect.orDie);
+    const encodedReady = yield* encodeReadyOverviewJson(ready).pipe(Effect.orDie);
     if (Buffer.byteLength(encodedReady) > MAX_BROWSER_PAYLOAD_BYTES) {
       return status(checkedAt, {
         status: "unavailable",

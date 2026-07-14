@@ -1,10 +1,10 @@
 # Founder Packet: Palari Company OS Read-Only Bridge v0
 
-Status: **draft — implementation evidence and independent acceptance pending**
+Status: **complete — independent review ACCEPT**
 
 This packet must not be treated as approval to push, merge, deploy, import live
-records, or add Company OS write operations. Final status is reached only when
-the completion contract is fully checked with committed evidence.
+records, or add Company OS write operations. It records a completed local v0
+implementation and the evidence supporting a founder dogfood decision.
 
 ## Exact baseline
 
@@ -50,17 +50,17 @@ authorities.
 
 ## Current evidence
 
-| Evidence                                               | State                    | Location                                          |
-| ------------------------------------------------------ | ------------------------ | ------------------------------------------------- |
-| Company OS 337-test verification and offline demo      | Prepared; commit pending | `docs/palari/evidence/company-os-verification.md` |
-| Official-example unchanged fingerprint                 | Prepared; commit pending | `docs/palari/evidence/company-os-verification.md` |
-| Fictional fixture validation and unchanged fingerprint | Prepared; commit pending | `docs/palari/evidence/fixture-fingerprint.json`   |
-| T3 unit, type, lint, and integration checks            | Pending                  | `docs/palari/evidence/checks.md`                  |
-| Desktop and mobile visual evidence                     | Pending                  | `docs/palari/evidence/desktop.png`, `mobile.png`  |
-| Bundle comparison                                      | Pending                  | `docs/palari/evidence/bundle-impact.json`         |
-| Fresh independent review                               | Pending                  | `docs/palari/evidence/independent-review.md`      |
+| Evidence                                               | State         | Location                                          |
+| ------------------------------------------------------ | ------------- | ------------------------------------------------- |
+| Company OS 337-test verification and offline demo      | Pass          | `docs/palari/evidence/company-os-verification.md` |
+| Official-example unchanged fingerprint                 | Pass          | `docs/palari/evidence/company-os-verification.md` |
+| Fictional fixture validation and unchanged fingerprint | Pass          | `docs/palari/evidence/fixture-fingerprint.json`   |
+| T3 unit, type, lint, integration, and build checks     | Pass          | `docs/palari/evidence/checks.md`                  |
+| Desktop and mobile visual evidence                     | Pass          | `docs/palari/evidence/desktop.png`, `mobile.png`  |
+| Bundle comparison                                      | Within budget | `docs/palari/evidence/bundle-impact.json`         |
+| Fresh independent review                               | ACCEPT        | `docs/palari/evidence/independent-review.md`      |
 
-## Known risks to close before acceptance
+## Residual risks
 
 - Company OS queue JSON is unversioned; exact checkout pinning and strict raw
   schemas must therefore fail closed on drift.
@@ -68,11 +68,19 @@ authorities.
   URIs, branches, commits, and external references. Tests must prove none can
   cross the normalization boundary.
 - Subprocess cancellation, timeout, output bounds, and environment isolation
-  need platform-aware automated coverage.
+  are covered on this Linux host; Windows process-tree behavior still depends
+  on the existing cross-platform process runner and should be rechecked before
+  a Windows distribution claim.
 - The sibling-repository configuration is local by design and requires clear
   recoverable status when a checkout or workspace moves.
-- Browser accessibility, focus restoration, responsive overflow, and bundle
-  budgets still require captured evidence.
+- The local checkout and workspace are operator configuration. Moving either
+  intentionally produces a recoverable unavailable state rather than automatic
+  discovery.
+- The queue JSON has no independent schema version. Exact revision pinning and
+  strict validation reduce drift risk, but every Company OS upgrade requires a
+  deliberate compatibility run.
+- Only deterministic fictional data has been exercised. A real workspace is
+  intentionally blocked on founder creation and approval.
 
 ## Intentionally deferred
 

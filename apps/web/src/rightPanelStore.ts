@@ -48,8 +48,8 @@ export type RightPanelSurface =
   | { id: "plan"; kind: "plan" }
   | { id: "palari"; kind: "palari" };
 
-const RIGHT_PANEL_STORAGE_KEY = "t3code:right-panel-state:v2";
-const RIGHT_PANEL_STORAGE_VERSION = 8;
+export const RIGHT_PANEL_STORAGE_KEY = "t3code:right-panel-state:v2";
+export const RIGHT_PANEL_STORAGE_VERSION = 8;
 
 export interface ThreadRightPanelState {
   isOpen: boolean;
@@ -618,6 +618,13 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
       ),
       partialize: (state) => ({ byThreadKey: state.byThreadKey }),
       migrate: migratePersistedRightPanelState,
+      // Zustand only invokes `migrate` when a stored version differs. Validate
+      // again at the merge boundary so corrupt current-version snapshots cannot
+      // replace live actions or bypass the explicit surface-shape allowlist.
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...migratePersistedRightPanelState(persistedState),
+      }),
     },
   ),
 );

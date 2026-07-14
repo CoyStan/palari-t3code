@@ -1,5 +1,7 @@
 import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
+import * as SchemaTransformation from "effect/SchemaTransformation";
 
 import { EnvironmentId, ProjectId, ThreadId, TrimmedNonEmptyString } from "./baseSchemas.ts";
 
@@ -23,7 +25,15 @@ export type ExecutionEnvironmentPlatform = typeof ExecutionEnvironmentPlatform.T
 export const ExecutionEnvironmentCapabilities = Schema.Struct({
   repositoryIdentity: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   // Optional for compatibility with environments that predate the Palari bridge.
-  palariCompanyOsRead: Schema.optionalKey(Schema.Boolean),
+  palariCompanyOsRead: Schema.optionalKey(Schema.Boolean).pipe(
+    Schema.decodeTo(
+      Schema.optionalKey(Schema.Boolean),
+      SchemaTransformation.transformOptional({
+        decode: (value) => (Option.isSome(value) ? value : Option.some(false)),
+        encode: (value) => value,
+      }),
+    ),
+  ),
 });
 export type ExecutionEnvironmentCapabilities = typeof ExecutionEnvironmentCapabilities.Type;
 

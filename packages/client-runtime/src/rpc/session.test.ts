@@ -108,6 +108,7 @@ const SERVER_CONFIG: ServerConfigType = {
     },
     serverVersion: "0.0.0-test",
     capabilities: {
+      palariCompanyOsRead: false,
       repositoryIdentity: true,
     },
   },

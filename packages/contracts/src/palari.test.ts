@@ -8,11 +8,16 @@ import {
   PalariStatusCode,
 } from "./palari.ts";
 
+const decodeEnvironmentCapabilities = Schema.decodeUnknownSync(ExecutionEnvironmentCapabilities);
+const decodePalariReadOverviewResult = Schema.decodeUnknownSync(PalariReadOverviewResult);
+const decodePalariStatusCode = Schema.decodeUnknownSync(PalariStatusCode);
+
 describe("Palari bridge contracts", () => {
   it("treats the capability as false when an older descriptor omits it", () => {
-    const decoded = Schema.decodeUnknownSync(ExecutionEnvironmentCapabilities)({
+    const decoded = decodeEnvironmentCapabilities({
       repositoryIdentity: true,
     });
+    expect(decoded.palariCompanyOsRead).toBe(false);
     expect(supportsPalariCompanyOsRead(decoded)).toBe(false);
     expect(
       supportsPalariCompanyOsRead({ repositoryIdentity: true, palariCompanyOsRead: true }),
@@ -21,7 +26,7 @@ describe("Palari bridge contracts", () => {
 
   it("decodes the bounded operational result", () => {
     expect(
-      Schema.decodeUnknownSync(PalariReadOverviewResult)({
+      decodePalariReadOverviewResult({
         protocolVersion: PALARI_BRIDGE_PROTOCOL_VERSION,
         status: "incompatible",
         checkedAt: "2026-07-14T00:00:00.000Z",
@@ -33,12 +38,12 @@ describe("Palari bridge contracts", () => {
   });
 
   it("rejects unknown operational status codes", () => {
-    expect(() => Schema.decodeUnknownSync(PalariStatusCode)("raw_subprocess_error")).toThrow();
+    expect(() => decodePalariStatusCode("raw_subprocess_error")).toThrow();
   });
 
   it("rejects unknown result variants", () => {
     expect(() =>
-      Schema.decodeUnknownSync(PalariReadOverviewResult)({
+      decodePalariReadOverviewResult({
         protocolVersion: 1,
         status: "mutating",
         checkedAt: "2026-07-14T00:00:00.000Z",
@@ -94,9 +99,9 @@ describe("Palari bridge contracts", () => {
       itemsTruncated: false,
       contentTruncated: false,
     };
-    expect(Schema.decodeUnknownSync(PalariReadOverviewResult)(ready).status).toBe("ready");
+    expect(decodePalariReadOverviewResult(ready).status).toBe("ready");
     expect(() =>
-      Schema.decodeUnknownSync(PalariReadOverviewResult)({
+      decodePalariReadOverviewResult({
         ...ready,
         workItems: Array.from({ length: 51 }, () => item),
       }),

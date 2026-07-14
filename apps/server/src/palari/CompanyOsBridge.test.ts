@@ -34,10 +34,12 @@ const queueItem = {
   scope_overlap_state: "clear",
 };
 
-const queueJson = JSON.stringify({ workspace: "Fixture Workspace", queue: [queueItem] });
-const briefJson = JSON.stringify({
+const queueEnvelope = { workspace: "Fixture Workspace", queue: [queueItem] };
+const queueJson = JSON.stringify(queueEnvelope);
+const briefPacket = {
   schema_version: CompanyOsBridge.PINNED_AGENT_PACKET_SCHEMA,
   workspace: "Fixture Workspace",
+  agent: { id: queueItem.palari },
   work_item: { id: queueItem.id, objective: "Keep the fictional boundary explicit." },
   allowed_paths: { read: ["fixture/input.md"], write: ["fixture/output.md"] },
   allowed_sources: [{ id: "SOURCE-TEST-001" }],
@@ -50,7 +52,8 @@ const briefJson = JSON.stringify({
     requires_receipt: true,
     requires_review: true,
   },
-});
+};
+const briefJson = JSON.stringify(briefPacket);
 
 const serializeForAssertion = (value: unknown): string => JSON.stringify(value);
 
@@ -120,6 +123,17 @@ const successfulRunner =
       if (input.args.includes("brief")) return processOutput(briefJson);
       return processOutput(queueJson);
     });
+
+const payloadRunner =
+  (queue: unknown, brief: unknown = briefPacket): ProcessRunner.ProcessRunner["Service"]["run"] =>
+  (input) =>
+    Effect.succeed(
+      input.command === "git"
+        ? processOutput(`${CompanyOsBridge.PINNED_COMPANY_OS_REVISION}\n`)
+        : input.args.includes("brief")
+          ? processOutput(serializeForAssertion(brief))
+          : processOutput(serializeForAssertion(queue)),
+    );
 
 describe("CompanyOsBridge", () => {
   it("exposes only the two read-only allowlisted argv shapes", () => {
@@ -289,6 +303,92 @@ describe("CompanyOsBridge", () => {
     }).pipe(Effect.provide(NodeServices.layer)),
   );
 
+  it.effect(
+    "rejects workspace.json and split collection symlink escapes before Palari CLI reads",
+    () =>
+      Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+
+        const mainConfig = yield* makeConfiguredWorkspace();
+        const outsideMain = yield* fs.makeTempDirectoryScoped({ prefix: "t3-palari-main-escape-" });
+        yield* fs.writeFileString(
+          `${outsideMain}/workspace.json`,
+          '{"schema_version":1,"name":"Fixture Workspace"}\n',
+        );
+        yield* fs.remove(`${mainConfig.workspace}/workspace.json`);
+        yield* fs.symlink(
+          `${outsideMain}/workspace.json`,
+          `${mainConfig.workspace}/workspace.json`,
+        );
+        const mainCalls: Array<ProcessRunner.ProcessRunInput> = [];
+        const mainResult = yield* readOverview(mainConfig, successfulRunner(mainCalls));
+        assertOperationalCode(mainResult, "workspace_symlink_escape");
+        assert.isFalse(mainCalls.some((input) => input.command.endsWith("/bin/palari")));
+
+        const splitConfig = yield* makeConfiguredWorkspace();
+        yield* fs.writeFileString(
+          `${splitConfig.workspace}/workspace.json`,
+          serializeForAssertion({
+            schema_version: 1,
+            name: "Fixture Workspace",
+            collection_files: { work_items: ["records/work-items.json"] },
+          }),
+        );
+        yield* fs.makeDirectory(`${splitConfig.workspace}/records`, { recursive: true });
+        const outsideSplit = yield* fs.makeTempDirectoryScoped({
+          prefix: "t3-palari-split-escape-",
+        });
+        yield* fs.writeFileString(`${outsideSplit}/work-items.json`, "[]\n");
+        yield* fs.symlink(
+          `${outsideSplit}/work-items.json`,
+          `${splitConfig.workspace}/records/work-items.json`,
+        );
+        const splitCalls: Array<ProcessRunner.ProcessRunInput> = [];
+        const splitResult = yield* readOverview(splitConfig, successfulRunner(splitCalls));
+        assertOperationalCode(splitResult, "workspace_symlink_escape");
+        assert.isFalse(splitCalls.some((input) => input.command.endsWith("/bin/palari")));
+      }).pipe(Effect.provide(NodeServices.layer)),
+  );
+
+  it.effect("requires every declared split collection entry to be a regular file", () =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const config = yield* makeConfiguredWorkspace();
+      yield* fs.writeFileString(
+        `${config.workspace}/workspace.json`,
+        serializeForAssertion({
+          schema_version: 1,
+          name: "Fixture Workspace",
+          collection_files: { work_items: ["records/work-items.json"] },
+        }),
+      );
+      const missing = yield* readOverview(config, successfulRunner());
+      assertOperationalCode(missing, "workspace_invalid");
+
+      yield* fs.makeDirectory(`${config.workspace}/records/work-items.json`, { recursive: true });
+      const directory = yield* readOverview(config, successfulRunner());
+      assertOperationalCode(directory, "workspace_invalid");
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
+
+  it.effect("rejects path-like configured workspace identities without spawning", () =>
+    Effect.gen(function* () {
+      const config = yield* makeConfiguredWorkspace();
+      for (const workspaceId of [
+        "../fixture",
+        "/fixture",
+        "fixture/path",
+        "C:\\fixture",
+        "C:fixture",
+      ]) {
+        const result = yield* readOverview({ ...config, workspaceId }, () =>
+          Effect.die("unexpected process"),
+        );
+        assertOperationalCode(result, "workspace_invalid");
+      }
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
+
   it.effect("fails closed for stale revisions, malformed JSON, and schema mismatches", () =>
     Effect.gen(function* () {
       const config = yield* makeConfiguredWorkspace();
@@ -339,6 +439,71 @@ describe("CompanyOsBridge", () => {
     }).pipe(Effect.provide(NodeServices.layer)),
   );
 
+  it.effect("binds queue and agent packet identities to the configured workspace query", () =>
+    Effect.gen(function* () {
+      const config = yield* makeConfiguredWorkspace();
+
+      const queueWorkspaceMismatch = yield* readOverview(
+        config,
+        payloadRunner({ ...queueEnvelope, workspace: "Other Workspace" }),
+      );
+      assertOperationalCode(queueWorkspaceMismatch, "queue_schema_mismatch");
+
+      const briefWorkspaceMismatch = yield* readOverview(
+        config,
+        payloadRunner(queueEnvelope, { ...briefPacket, workspace: "Other Workspace" }),
+      );
+      assertOperationalCode(briefWorkspaceMismatch, "packet_schema_mismatch");
+
+      const briefWorkItemMismatch = yield* readOverview(
+        config,
+        payloadRunner(queueEnvelope, {
+          ...briefPacket,
+          work_item: { ...briefPacket.work_item, id: "WORK-OTHER-001" },
+        }),
+      );
+      assertOperationalCode(briefWorkItemMismatch, "packet_schema_mismatch");
+
+      const briefPalariMismatch = yield* readOverview(
+        config,
+        payloadRunner(queueEnvelope, {
+          ...briefPacket,
+          agent: { ...briefPacket.agent, id: "PALARI-OTHER" },
+        }),
+      );
+      assertOperationalCode(briefPalariMismatch, "packet_schema_mismatch");
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
+
+  it.effect("rejects unknown governance enum values and malformed approval progress", () =>
+    Effect.gen(function* () {
+      const config = yield* makeConfiguredWorkspace();
+      const invalidFields: ReadonlyArray<readonly [keyof typeof queueItem, unknown]> = [
+        ["status", "future-status"],
+        ["attention", "future-attention"],
+        ["risk", "R6"],
+        ["intensity", "extreme"],
+        ["next_step_type", "mutate"],
+        ["evidence_state", "future-evidence"],
+        ["review_state", "future-review"],
+        ["receipt_state", "future-receipt"],
+        ["acceptance_state", "future-acceptance"],
+        ["scope_overlap_state", "future-boundary"],
+        ["approval_progress", "one/two"],
+      ];
+      for (const [field, value] of invalidFields) {
+        const result = yield* readOverview(
+          config,
+          payloadRunner({
+            ...queueEnvelope,
+            queue: [{ ...queueItem, [field]: value }],
+          }),
+        );
+        assertOperationalCode(result, "queue_schema_mismatch");
+      }
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
+
   it.effect("maps generic process failures without exposing process details", () =>
     Effect.gen(function* () {
       const config = yield* makeConfiguredWorkspace();
@@ -372,7 +537,12 @@ describe("CompanyOsBridge", () => {
           input.command === "git"
             ? processOutput(`${CompanyOsBridge.PINNED_COMPANY_OS_REVISION}\n`)
             : input.args.includes("brief")
-              ? processOutput(briefJson)
+              ? processOutput(
+                  serializeForAssertion({
+                    ...briefPacket,
+                    work_item: { ...briefPacket.work_item, id: items[0]?.id },
+                  }),
+                )
               : processOutput(manyQueueJson),
         ),
       );
