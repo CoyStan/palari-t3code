@@ -12,6 +12,7 @@ import {
   type ReviewDiffPreviewInput,
   type ReviewDiffPreviewResult,
 } from "@t3tools/contracts";
+import { isRelativePathWithinRoot } from "@t3tools/shared/path";
 
 import * as ServerConfig from "../config.ts";
 import * as GitVcsDriver from "../vcs/GitVcsDriver.ts";
@@ -54,7 +55,7 @@ export const make = Effect.gen(function* () {
 
   const isWithinRoot = (candidate: string, root: string) => {
     const relative = path.relative(root, candidate);
-    return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+    return isRelativePathWithinRoot(relative, path.isAbsolute);
   };
 
   const assertWorkspaceBoundCwd = Effect.fn("ReviewService.assertWorkspaceBoundCwd")(function* (

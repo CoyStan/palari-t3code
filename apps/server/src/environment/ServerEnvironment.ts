@@ -11,6 +11,7 @@ import * as Schema from "effect/Schema";
 import packageJson from "../../package.json" with { type: "json" };
 import * as ServerConfig from "../config.ts";
 import * as ProcessRunner from "../processRunner.ts";
+import { isCompanyOsBridgeConfigured } from "../palari/CompanyOsBridge.ts";
 import { resolveServerEnvironmentLabel } from "./ServerEnvironmentLabel.ts";
 
 export class ServerEnvironmentIdPersistenceError extends Schema.TaggedErrorClass<ServerEnvironmentIdPersistenceError>()(
@@ -135,6 +136,7 @@ export const make = Effect.gen(function* () {
     serverVersion: packageJson.version,
     capabilities: {
       repositoryIdentity: true,
+      palariCompanyOsRead: isCompanyOsBridgeConfigured(),
     },
   };
 

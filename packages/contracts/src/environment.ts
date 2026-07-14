@@ -22,8 +22,15 @@ export type ExecutionEnvironmentPlatform = typeof ExecutionEnvironmentPlatform.T
 
 export const ExecutionEnvironmentCapabilities = Schema.Struct({
   repositoryIdentity: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+  // Optional for compatibility with environments that predate the Palari bridge.
+  palariCompanyOsRead: Schema.optionalKey(Schema.Boolean),
 });
 export type ExecutionEnvironmentCapabilities = typeof ExecutionEnvironmentCapabilities.Type;
+
+/** Backward-compatible capability check: an omitted pre-bridge value means false. */
+export const supportsPalariCompanyOsRead = (
+  capabilities: ExecutionEnvironmentCapabilities,
+): boolean => capabilities.palariCompanyOsRead === true;
 
 export const ExecutionEnvironmentDescriptor = Schema.Struct({
   environmentId: EnvironmentId,

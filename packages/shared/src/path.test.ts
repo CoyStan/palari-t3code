@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
   isExplicitRelativePath,
+  isRelativePathWithinRoot,
   isUncPath,
   isWindowsAbsolutePath,
   isWindowsDrivePath,
@@ -30,5 +31,18 @@ describe("path helpers", () => {
     expect(isExplicitRelativePath("./repo")).toBe(true);
     expect(isExplicitRelativePath("..\\repo")).toBe(true);
     expect(isExplicitRelativePath("~/repo")).toBe(false);
+  });
+
+  it("checks canonical relative paths without sibling-prefix confusion", () => {
+    const isAbsolute = (value: string) => value.startsWith("/") || /^[a-z]:\\/i.test(value);
+
+    expect(isRelativePathWithinRoot("", isAbsolute)).toBe(true);
+    expect(isRelativePathWithinRoot("workspace.json", isAbsolute)).toBe(true);
+    expect(isRelativePathWithinRoot("split/work-items.json", isAbsolute)).toBe(true);
+    expect(isRelativePathWithinRoot("..", isAbsolute)).toBe(false);
+    expect(isRelativePathWithinRoot("../workspace-sibling", isAbsolute)).toBe(false);
+    expect(isRelativePathWithinRoot("..\\workspace-sibling", isAbsolute)).toBe(false);
+    expect(isRelativePathWithinRoot("/absolute", isAbsolute)).toBe(false);
+    expect(isRelativePathWithinRoot("C:\\absolute", isAbsolute)).toBe(false);
   });
 });

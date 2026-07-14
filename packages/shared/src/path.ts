@@ -20,3 +20,19 @@ export function isExplicitRelativePath(value: string): boolean {
     value.startsWith("..\\")
   );
 }
+
+/**
+ * Decide whether a value returned by a platform path implementation's
+ * `relative(root, candidate)` remains inside that root. Callers that need
+ * symlink safety must realpath both values before calculating `relative`.
+ */
+export function isRelativePathWithinRoot(
+  relativePath: string,
+  isAbsolute: (value: string) => boolean,
+): boolean {
+  if (relativePath === "") return true;
+  if (isAbsolute(relativePath)) return false;
+
+  const normalized = relativePath.replaceAll("\\", "/");
+  return normalized !== ".." && !normalized.startsWith("../");
+}

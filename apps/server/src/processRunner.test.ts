@@ -6,6 +6,7 @@ import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as PlatformError from "effect/PlatformError";
 import * as Sink from "effect/Sink";
+import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
 import { TestClock } from "effect/testing";
 import { ChildProcessSpawner } from "effect/unstable/process";
@@ -19,6 +20,8 @@ type ChildProcessCommand = {
   readonly args: ReadonlyArray<string>;
   readonly options: {
     readonly shell?: boolean | string;
+    readonly env?: NodeJS.ProcessEnv;
+    readonly extendEnv?: boolean;
   };
 };
 
@@ -58,7 +61,11 @@ function makeHandle(input: {
 function makeSpawner(
   f: (
     command: ChildProcessCommand,
-  ) => Effect.Effect<ChildProcessSpawner.ChildProcessHandle, PlatformError.PlatformError>,
+  ) => Effect.Effect<
+    ChildProcessSpawner.ChildProcessHandle,
+    PlatformError.PlatformError,
+    Scope.Scope
+  >,
 ) {
   return ChildProcessSpawner.make((command) => f(asChildProcessCommand(command)));
 }
@@ -100,6 +107,23 @@ describe("runProcess", () => {
       expect(result.timedOut).toBe(false);
     }),
   );
+
+  it.effect("can replace rather than extend the host environment", () => {
+    const spawner = makeSpawner((command) =>
+      Effect.sync(() => {
+        expect(command.options.env).toEqual({ PATH: "/safe/bin", LANG: "C.UTF-8" });
+        expect(command.options.extendEnv).toBe(false);
+        return makeHandle({ stdout: "ok" });
+      }),
+    );
+
+    return runWith(spawner)({
+      command: "fake",
+      args: [],
+      env: { PATH: "/safe/bin", LANG: "C.UTF-8" },
+      extendEnv: false,
+    });
+  });
 
   it.effect("runs through the ProcessRunner service", () => {
     const spawner = makeSpawner((command) =>
@@ -397,6 +421,25 @@ describe("runProcess", () => {
         stdoutTruncated: false,
         stderrTruncated: false,
       });
+    }),
+  );
+
+  it.effect("closes the child scope when a running process is interrupted", () =>
+    Effect.gen(function* () {
+      const released = yield* Deferred.make<void>();
+      const spawner = makeSpawner(() =>
+        Effect.acquireRelease(Effect.succeed(makeHandle({ exitCode: Effect.never })), () =>
+          Deferred.succeed(released, undefined),
+        ),
+      );
+      const fiber = yield* runWith(spawner)({
+        command: "fake",
+        args: ["wait"],
+      }).pipe(Effect.forkScoped);
+
+      yield* Effect.yieldNow;
+      yield* Fiber.interrupt(fiber);
+      yield* Deferred.await(released);
     }),
   );
 });
