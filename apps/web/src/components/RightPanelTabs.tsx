@@ -1,6 +1,15 @@
 import type { ContextMenuItem, PreviewSessionSnapshot } from "@t3tools/contracts";
 import { getTerminalLabel } from "@t3tools/shared/terminalLabels";
-import { ClipboardList, FileDiff, Files, Globe2, Plus, TerminalSquare, X } from "lucide-react";
+import {
+  ClipboardList,
+  FileDiff,
+  Files,
+  Globe2,
+  Plus,
+  ShieldCheck,
+  TerminalSquare,
+  X,
+} from "lucide-react";
 import {
   type MouseEvent as ReactMouseEvent,
   type ReactElement,
@@ -44,9 +53,11 @@ interface RightPanelTabsProps {
   onAddTerminal: () => void;
   onAddDiff: () => void;
   onAddFiles: () => void;
+  onAddPalari: () => void;
   browserAvailable: boolean;
   diffAvailable: boolean;
   filesAvailable: boolean;
+  palariAvailable: boolean;
   children: ReactNode;
 }
 
@@ -91,9 +102,11 @@ function RightPanelEmptyState(props: {
   onAddTerminal: () => void;
   onAddDiff: () => void;
   onAddFiles: () => void;
+  onAddPalari: () => void;
   browserAvailable: boolean;
   diffAvailable: boolean;
   filesAvailable: boolean;
+  palariAvailable: boolean;
 }) {
   const actions = [
     {
@@ -128,6 +141,18 @@ function RightPanelEmptyState(props: {
       disabledReason: SURFACE_DISABLED_REASONS.diff,
       onClick: props.onAddDiff,
     },
+    ...(props.palariAvailable
+      ? [
+          {
+            label: "Palari",
+            description: "Observe Company OS governance.",
+            icon: ShieldCheck,
+            available: true,
+            disabledReason: null,
+            onClick: props.onAddPalari,
+          },
+        ]
+      : []),
   ] as const;
 
   return (
@@ -175,7 +200,7 @@ function RightPanelEmptyState(props: {
             return (
               <DisabledReasonTooltip
                 key={action.label}
-                reason={action.disabledReason}
+                reason={action.disabledReason ?? "This surface is unavailable."}
                 trigger={disabledCard}
               />
             );
@@ -205,6 +230,8 @@ function surfaceTitle(
       );
     case "plan":
       return "Plan";
+    case "palari":
+      return "Palari";
     case "preview": {
       const snapshot = surface.resourceId ? sessions[surface.resourceId] : null;
       if (!snapshot || snapshot.navStatus._tag === "Idle") return "Browser";
@@ -266,6 +293,8 @@ function SurfaceIcon({
       return <TerminalSquare className="size-3.5 shrink-0" />;
     case "plan":
       return <ClipboardList className="size-3.5 shrink-0" />;
+    case "palari":
+      return <ShieldCheck className="size-3.5 shrink-0" />;
   }
 }
 
@@ -470,6 +499,12 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
                     <FileDiff />
                     Diff
                   </SurfaceMenuItem>
+                  {props.palariAvailable ? (
+                    <SurfaceMenuItem available onClick={props.onAddPalari}>
+                      <ShieldCheck />
+                      Palari
+                    </SurfaceMenuItem>
+                  ) : null}
                 </MenuPopup>
               </Menu>
             ) : null}
@@ -484,9 +519,11 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
             onAddTerminal={props.onAddTerminal}
             onAddDiff={props.onAddDiff}
             onAddFiles={props.onAddFiles}
+            onAddPalari={props.onAddPalari}
             browserAvailable={props.browserAvailable}
             diffAvailable={props.diffAvailable}
             filesAvailable={props.filesAvailable}
+            palariAvailable={props.palariAvailable}
           />
         ) : (
           props.children

@@ -261,6 +261,7 @@ const PreviewPanel = lazy(() =>
 );
 const DiffPanel = lazy(() => import("./DiffPanel"));
 const FilePreviewPanel = lazy(() => import("./files/FilePreviewPanel"));
+const PalariPanel = lazy(() => import("./palari/PalariPanel"));
 const EMPTY_PENDING_FILE_SURFACE_IDS: ReadonlySet<string> = new Set();
 const TYPE_TO_FOCUS_EDITABLE_SELECTOR = [
   "input",
@@ -1028,6 +1029,11 @@ function ChatViewContent(props: ChatViewProps) {
   const closePreview = useAtomCommand(previewEnvironment.close, "preview close");
   const { environments } = useEnvironments();
   const primaryEnvironment = usePrimaryEnvironment();
+  const serverWelcomeQuery = useEnvironmentQuery(
+    serverEnvironment.welcome({ environmentId, input: {} }),
+  );
+  const serverWelcome = serverWelcomeQuery.data;
+  const palariAvailable = serverWelcome?.environment.capabilities.palariCompanyOsRead ?? false;
   const retryEnvironment = useAtomCommand(environmentCatalog.retryNow, { reportFailure: false });
   const environmentById = useMemo(
     () => new Map(environments.map((environment) => [environment.environmentId, environment])),
@@ -1330,6 +1336,11 @@ function ChatViewContent(props: ChatViewProps) {
       .getState()
       .reconcileBrowserSurfaces(activeThreadRef, Object.keys(activePreviewState.sessions));
   }, [activePreviewState.sessions, activeThreadRef]);
+
+  useEffect(() => {
+    if (!activeThreadRef || !serverWelcome) return;
+    useRightPanelStore.getState().reconcilePalariSurface(activeThreadRef, palariAvailable);
+  }, [activeThreadRef, palariAvailable, serverWelcome]);
 
   const planSidebarOpen = activeRightPanelKind === "plan";
 
@@ -2778,6 +2789,10 @@ function ChatViewContent(props: ChatViewProps) {
     if (!activeThreadRef || !activeProject) return;
     useRightPanelStore.getState().open(activeThreadRef, "files");
   }, [activeProject, activeThreadRef]);
+  const addPalariSurface = useCallback(() => {
+    if (!activeThreadRef || !palariAvailable) return;
+    useRightPanelStore.getState().open(activeThreadRef, "palari");
+  }, [activeThreadRef, palariAvailable]);
   const openFileSurface = useCallback(
     (relativePath: string) => {
       if (!activeThreadRef || !activeProject) return;
@@ -2798,7 +2813,7 @@ function ChatViewContent(props: ChatViewProps) {
       createBrowserSurface();
     }
   }, [activePreviewState.activeTabId, activeThreadRef, createBrowserSurface, previewPanelOpen]);
-  const closePreviewPanel = useCallback(() => {
+  const closeRightPanel = useCallback(() => {
     if (activeThreadRef) {
       setMaximizedRightPanelThreadKey(null);
       useRightPanelStore.getState().close(activeThreadRef);
@@ -2931,12 +2946,12 @@ function ChatViewContent(props: ChatViewProps) {
       if (planSidebarOpen) {
         closePlanSidebar();
       } else {
-        closePreviewPanel();
+        closeRightPanel();
       }
       return;
     }
     useRightPanelStore.getState().toggleVisibility(activeThreadRef);
-  }, [activeThreadRef, closePlanSidebar, closePreviewPanel, planSidebarOpen, rightPanelOpen]);
+  }, [activeThreadRef, closePlanSidebar, closeRightPanel, planSidebarOpen, rightPanelOpen]);
   const toggleRightPanelMaximized = useCallback(() => {
     if (!canMaximizeRightPanel) return;
     setMaximizedRightPanelThreadKey((threadKey) =>
@@ -4919,7 +4934,7 @@ function ChatViewContent(props: ChatViewProps) {
       terminalAvailable={activeProject !== null}
       terminalOpen={terminalUiState.terminalOpen}
       terminalShortcutLabel={shortcutLabelForCommand(keybindings, "terminal.toggle")}
-      rightPanelAvailable={activeProject !== null}
+      rightPanelAvailable={activeProject !== null || palariAvailable}
       rightPanelOpen={rightPanelOpen}
       rightPanelShortcutLabel={shortcutLabelForCommand(keybindings, "rightPanel.toggle")}
       onToggleTerminal={toggleTerminalVisibility}
@@ -4938,7 +4953,11 @@ function ChatViewContent(props: ChatViewProps) {
     </div>
   );
   const rightPanelContent = activeThreadRef ? (
-    activeRightPanelSurface?.kind === "preview" ? (
+    activeRightPanelSurface?.kind === "palari" && palariAvailable ? (
+      <Suspense fallback={null}>
+        <PalariPanel environmentId={environmentId} />
+      </Suspense>
+    ) : activeRightPanelSurface?.kind === "preview" ? (
       <Suspense fallback={null}>
         <PreviewPanel
           mode="embedded"
@@ -5314,15 +5333,17 @@ function ChatViewContent(props: ChatViewProps) {
           onAddTerminal={addTerminalSurface}
           onAddDiff={addDiffSurface}
           onAddFiles={addFilesSurface}
+          onAddPalari={addPalariSurface}
           browserAvailable={isPreviewSupportedInRuntime()}
           diffAvailable={isServerThread && isGitRepo}
           filesAvailable={activeProject !== null}
+          palariAvailable={palariAvailable}
         >
           {rightPanelContent}
         </RightPanelTabs>
       ) : null}
       {shouldUsePlanSidebarSheet && rightPanelOpen && activeThreadRef ? (
-        <RightPanelSheet open onClose={planSidebarOpen ? closePlanSidebar : closePreviewPanel}>
+        <RightPanelSheet open onClose={planSidebarOpen ? closePlanSidebar : closeRightPanel}>
           <RightPanelTabs
             mode="sheet"
             layoutControls={panelToggleControls}
@@ -5341,9 +5362,11 @@ function ChatViewContent(props: ChatViewProps) {
             onAddTerminal={addTerminalSurface}
             onAddDiff={addDiffSurface}
             onAddFiles={addFilesSurface}
+            onAddPalari={addPalariSurface}
             browserAvailable={isPreviewSupportedInRuntime()}
             diffAvailable={isServerThread && isGitRepo}
             filesAvailable={activeProject !== null}
+            palariAvailable={palariAvailable}
           >
             {rightPanelContent}
           </RightPanelTabs>

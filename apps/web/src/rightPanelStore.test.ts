@@ -102,6 +102,33 @@ describe("rightPanelStore", () => {
     });
   });
 
+  it("keeps only explicit valid surface shapes during migration", () => {
+    expect(
+      migratePersistedRightPanelState({
+        byThreadKey: {
+          "env-1:thread-A": {
+            isOpen: true,
+            activeSurfaceId: "palari",
+            surfaces: [
+              { id: "palari", kind: "palari", injected: "discarded" },
+              { id: "diff", kind: "unknown" },
+              { id: "browser:wrong", kind: "preview", resourceId: "tab-a" },
+              null,
+            ],
+          },
+        },
+      }),
+    ).toEqual({
+      byThreadKey: {
+        "env-1:thread-A": {
+          isOpen: true,
+          activeSurfaceId: "palari",
+          surfaces: [{ id: "palari", kind: "palari" }],
+        },
+      },
+    });
+  });
+
   it("open sets the active panel for a thread", () => {
     useRightPanelStore.getState().open(refA, "preview");
     expect(selectActiveRightPanel(useRightPanelStore.getState().byThreadKey, refA)).toBe("preview");
@@ -124,6 +151,23 @@ describe("rightPanelStore", () => {
       isOpen: true,
       activeSurfaceId: "files",
       surfaces: [{ id: "files", kind: "files" }],
+    });
+  });
+
+  it("keeps Palari as a singleton and removes it when the capability is absent", () => {
+    useRightPanelStore.getState().open(refA, "palari");
+    useRightPanelStore.getState().open(refA, "palari");
+    expect(selectThreadRightPanelState(useRightPanelStore.getState().byThreadKey, refA)).toEqual({
+      isOpen: true,
+      activeSurfaceId: "palari",
+      surfaces: [{ id: "palari", kind: "palari" }],
+    });
+
+    useRightPanelStore.getState().reconcilePalariSurface(refA, false);
+    expect(selectThreadRightPanelState(useRightPanelStore.getState().byThreadKey, refA)).toEqual({
+      isOpen: false,
+      activeSurfaceId: null,
+      surfaces: [],
     });
   });
 

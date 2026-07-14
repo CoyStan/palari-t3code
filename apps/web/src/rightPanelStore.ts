@@ -14,7 +14,15 @@ import { createJSONStorage, persist } from "zustand/middleware";
 
 import { resolveStorage } from "./lib/storage";
 
-export const RIGHT_PANEL_KINDS = ["plan", "diff", "files", "file", "preview", "terminal"] as const;
+export const RIGHT_PANEL_KINDS = [
+  "plan",
+  "diff",
+  "files",
+  "file",
+  "preview",
+  "terminal",
+  "palari",
+] as const;
 export type RightPanelKind = (typeof RIGHT_PANEL_KINDS)[number];
 
 export type RightPanelSurface =
@@ -37,10 +45,11 @@ export type RightPanelSurface =
       revealLine: number | null;
       revealRequestId: number;
     }
-  | { id: "plan"; kind: "plan" };
+  | { id: "plan"; kind: "plan" }
+  | { id: "palari"; kind: "palari" };
 
 const RIGHT_PANEL_STORAGE_KEY = "t3code:right-panel-state:v2";
-const RIGHT_PANEL_STORAGE_VERSION = 7;
+const RIGHT_PANEL_STORAGE_VERSION = 8;
 
 export interface ThreadRightPanelState {
   isOpen: boolean;
@@ -69,6 +78,7 @@ interface RightPanelStoreState {
   closeAllSurfaces: (ref: ScopedThreadRef) => void;
   reconcileBrowserSurfaces: (ref: ScopedThreadRef, tabIds: readonly string[]) => void;
   reconcileFileSurfaces: (ref: ScopedThreadRef, workspaceAvailable: boolean) => void;
+  reconcilePalariSurface: (ref: ScopedThreadRef, available: boolean) => void;
   show: (ref: ScopedThreadRef) => void;
   close: (ref: ScopedThreadRef) => void;
   toggleVisibility: (ref: ScopedThreadRef) => void;
@@ -92,6 +102,8 @@ const singletonSurface = (
       return { id: "files", kind };
     case "plan":
       return { id: "plan", kind };
+    case "palari":
+      return { id: "palari", kind };
   }
 };
 
@@ -164,13 +176,56 @@ export function migratePersistedRightPanelState(persistedState: unknown): {
     persistedState.byThreadKey &&
     typeof persistedState.byThreadKey === "object"
       ? Object.fromEntries(
-          Object.entries(persistedState.byThreadKey as Record<string, ThreadRightPanelState>).map(
+          Object.entries(persistedState.byThreadKey as Record<string, unknown>).map(
             ([threadKey, threadState]) => {
               const validThreadState =
-                threadState && typeof threadState === "object" ? threadState : null;
-              const surfaces = Array.isArray(validThreadState?.surfaces)
-                ? validThreadState.surfaces.flatMap<RightPanelSurface>((surface) => {
-                    if (surface.kind === "file") {
+                threadState && typeof threadState === "object"
+                  ? (threadState as Record<string, unknown>)
+                  : null;
+              const persistedSurfaces = validThreadState?.surfaces;
+              const surfaces = Array.isArray(persistedSurfaces)
+                ? persistedSurfaces.flatMap<RightPanelSurface>((candidate) => {
+                    if (!candidate || typeof candidate !== "object") return [];
+                    const surface = candidate as Record<string, unknown>;
+                    if (surface.kind === "diff" && surface.id === "diff") {
+                      return [{ id: "diff", kind: "diff" }];
+                    }
+                    if (surface.kind === "files" && surface.id === "files") {
+                      return [{ id: "files", kind: "files" }];
+                    }
+                    if (surface.kind === "plan" && surface.id === "plan") {
+                      return [{ id: "plan", kind: "plan" }];
+                    }
+                    if (surface.kind === "palari" && surface.id === "palari") {
+                      return [{ id: "palari", kind: "palari" }];
+                    }
+                    if (
+                      surface.kind === "preview" &&
+                      surface.id === "browser:new" &&
+                      surface.resourceId === null
+                    ) {
+                      return [{ id: "browser:new", kind: "preview", resourceId: null }];
+                    }
+                    if (
+                      surface.kind === "preview" &&
+                      typeof surface.resourceId === "string" &&
+                      surface.resourceId.length > 0 &&
+                      surface.id === `browser:${surface.resourceId}`
+                    ) {
+                      return [
+                        {
+                          id: `browser:${surface.resourceId}`,
+                          kind: "preview",
+                          resourceId: surface.resourceId,
+                        },
+                      ];
+                    }
+                    if (
+                      surface.kind === "file" &&
+                      typeof surface.relativePath === "string" &&
+                      surface.relativePath.length > 0 &&
+                      surface.id === `file:${surface.relativePath}`
+                    ) {
                       const revealLine =
                         typeof surface.revealLine === "number" &&
                         Number.isFinite(surface.revealLine)
@@ -182,52 +237,67 @@ export function migratePersistedRightPanelState(persistedState: unknown): {
                         surface.revealRequestId >= 0
                           ? surface.revealRequestId
                           : 0;
-                      return [{ ...surface, revealLine, revealRequestId }];
+                      return [
+                        {
+                          id: `file:${surface.relativePath}`,
+                          kind: "file",
+                          relativePath: surface.relativePath,
+                          revealLine,
+                          revealRequestId,
+                        },
+                      ];
                     }
-                    if (surface.kind !== "terminal") return [surface];
                     if (
-                      !("resourceId" in surface) ||
+                      surface.kind !== "terminal" ||
                       typeof surface.resourceId !== "string" ||
+                      surface.resourceId.length === 0 ||
                       surface.id !== `terminal:${surface.resourceId}`
                     ) {
                       return [];
                     }
-                    const terminalIds =
-                      "terminalIds" in surface && Array.isArray(surface.terminalIds)
-                        ? [
-                            ...new Set(
-                              surface.terminalIds.filter(
-                                (terminalId): terminalId is string =>
-                                  typeof terminalId === "string",
-                              ),
+                    const terminalIds = Array.isArray(surface.terminalIds)
+                      ? [
+                          ...new Set(
+                            surface.terminalIds.filter(
+                              (terminalId): terminalId is string =>
+                                typeof terminalId === "string" && terminalId.length > 0,
                             ),
-                          ]
-                        : [surface.resourceId];
+                          ),
+                        ]
+                      : [surface.resourceId];
                     const activeTerminalId =
-                      "activeTerminalId" in surface &&
                       typeof surface.activeTerminalId === "string" &&
                       terminalIds.includes(surface.activeTerminalId)
                         ? surface.activeTerminalId
                         : (terminalIds[0] ?? surface.resourceId);
                     return [
                       {
-                        ...surface,
+                        id: `terminal:${surface.resourceId}`,
+                        kind: "terminal",
+                        resourceId: surface.resourceId,
                         terminalIds: terminalIds.length > 0 ? terminalIds : [surface.resourceId],
                         activeTerminalId,
+                        ...(surface.splitDirection === "vertical"
+                          ? { splitDirection: "vertical" as const }
+                          : {}),
                       },
                     ];
                   })
                 : [];
-              const activeSurfaceId = surfaces.some(
+              const deduplicatedSurfaces = surfaces.filter(
+                (surface, index) =>
+                  surfaces.findIndex((entry) => entry.id === surface.id) === index,
+              );
+              const activeSurfaceId = deduplicatedSurfaces.some(
                 (surface) => surface.id === validThreadState?.activeSurfaceId,
               )
-                ? (validThreadState?.activeSurfaceId ?? null)
+                ? (validThreadState?.activeSurfaceId as string)
                 : null;
               const isOpen =
                 typeof validThreadState?.isOpen === "boolean"
                   ? validThreadState.isOpen
                   : activeSurfaceId !== null;
-              return [threadKey, { isOpen, surfaces, activeSurfaceId }];
+              return [threadKey, { isOpen, surfaces: deduplicatedSurfaces, activeSurfaceId }];
             },
           ),
         )
@@ -475,6 +545,25 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
               activeSurfaceId: activeStillExists
                 ? current.activeSurfaceId
                 : (surfaces.at(-1)?.id ?? null),
+            };
+          }),
+        })),
+      reconcilePalariSurface: (ref, available) =>
+        set((state) => ({
+          byThreadKey: updateThread(state.byThreadKey, scopedThreadKey(ref), (current) => {
+            if (available) return current;
+            const index = current.surfaces.findIndex((surface) => surface.kind === "palari");
+            if (index < 0) return current;
+            const surfaces = current.surfaces.filter((surface) => surface.kind !== "palari");
+            const fallback = surfaces[Math.min(index, surfaces.length - 1)] ?? null;
+            return {
+              ...current,
+              isOpen: surfaces.length > 0 && current.isOpen,
+              surfaces,
+              activeSurfaceId:
+                current.activeSurfaceId === "palari"
+                  ? (fallback?.id ?? null)
+                  : current.activeSurfaceId,
             };
           }),
         })),
